@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG AI Analysis System | Clinical Decision Support</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #2E86AB;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .accuracy-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2E86AB;
+            margin-bottom: 15px;
+            border-left: 4px solid #2E86AB;
+            padding-left: 15px;
+        }
+        
+        /* Grid Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Metrics */
+        .metric {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2E86AB;
+        }
+        
+        .metric-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #2E86AB 0%, #1F5E3A 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        /* Status */
+        .status-normal {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .status-abnormal {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        /* Recommendations */
+        .recommendation-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-left: 3px solid #2E86AB;
+            border-radius: 5px;
+        }
+        
+        /* WHO References */
+        .who-reference {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>❤️ ECG AI Clinical Analysis System</h1>
+            <div class="subtitle">AI-Powered Cardiac Assessment | 95% Accuracy Target</div>
+            <div class="accuracy-badge">🎯 Target Accuracy: 95% | WHO Guidelines Integrated</div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="card">
+            <div class="card-title">📊 Analysis Controls</div>
+            <div style="text-align: center;">
+                <label>Select ECG Sample (0-99): </label>
+                <input type="number" id="sampleIndex" min="0" max="99" value="0" style="padding: 8px; margin: 0 10px;">
+                <button class="btn btn-primary" onclick="analyzeECG()">🔍 Analyze ECG</button>
+                <button class="btn" onclick="generateReport('pdf')">📄 Generate PDF Report</button>
+                <button class="btn" onclick="generateReport('docx')">📝 Generate Word Report</button>
+            </div>
+            <div class="loading" id="loading">⏳ Analyzing ECG signal...</div>
+        </div>
+        
+        <!-- Metrics Grid -->
+        <div class="grid-3" id="metrics">
+            <div class="metric">
+                <div class="metric-value" id="heartRate">--</div>
+                <div class="metric-label">Heart Rate (BPM)</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="condition">--</div>
+                <div class="metric-label">ECG Condition</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value" id="confidence">--</div>
+                <div class="metric-label">AI Confidence</div>
+            </div>
+        </div>
+        
+        <!-- ECG Plot -->
+        <div class="card">
+            <div class="card-title">📈 ECG Waveform Analysis</div>
+            <div id="ecgPlot" style="height: 400px;"></div>
+        </div>
+        
+        <!-- Recommendations Grid -->
+        <div class="grid-2">
+            <!-- Doctor Recommendations -->
+            <div class="card">
+                <div class="card-title">👨‍⚕️ Clinical Recommendations (For Doctor)</div>
+                <div id="doctorRecommendations">
+                    <p style="color: #999;">Select a sample to see recommendations</p>
+                </div>
+            </div>
+            
+            <!-- Patient Explanation -->
+            <div class="card">
+                <div class="card-title">💙 What This Means (For Patient)</div>
+                <div id="patientExplanation">
+                    <p style="color: #999;">Select a sample to see explanation</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- WHO References -->
+        <div class="card">
+            <div class="card-title">📚 WHO Guidelines & References</div>
+            <div id="whoReferences" class="who-reference">
+                <p>Select a sample to view WHO references</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="card" style="text-align: center; background: #f8f9fa;">
+            <p style="color: #666;">⚠️ This is an AI-assisted analysis tool. Clinical decisions should be made by qualified healthcare professionals.</p>
+            <p style="color: #999; font-size: 0.8em;">ECG AI Analysis System v2.0 | 95% Accuracy Target | WHO Guidelines Compliant</p>
+        </div>
+    </div>
+    
+    <script>
+        let currentPlot = null;
+        
+        function analyzeECG() {
+            const sampleIndex = $('#sampleIndex').val();
+            $('#loading').show();
+            
+            $.ajax({
+                url: '/analyze',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({sample_index: sampleIndex}),
+                success: function(data) {
+                    $('#loading').hide();
+                    
+                    // Update metrics
+                    $('#heartRate').text(data.heart_rate);
+                    $('#condition').html(data.condition === 'Normal' ? 
+                        '<span class="status-normal">✅ Normal</span>' : 
+                        '<span class="status-abnormal">⚠️ Abnormal</span>');
+                    $('#confidence').text(data.confidence);
+                    
+                    // Plot ECG
+                    const plotData = data.plotly_data;
+                    const layout = data.plotly_layout;
+                    Plotly.newPlot('ecgPlot', plotData, layout);
+                    
+                    // Doctor recommendations
+                    let docHtml = `<p><strong>Summary:</strong> ${data.doctor_recommendations.summary}</p>
+                                   <p><strong>Clinical Interpretation:</strong> ${data.doctor_recommendations.clinical_interpretation}</p>
+                                   <p><strong>Recommended Actions:</strong></p>`;
+                    data.doctor_recommendations.actions.forEach(action => {
+                        docHtml += `<div class="recommendation-item">• ${action}</div>`;
+                    });
+                    if (data.doctor_recommendations.referral_needed) {
+                        docHtml += `<div class="recommendation-item" style="background: #ffebee; border-left-color: #dc3545;">
+                                    ⚠️ Referral to cardiologist recommended</div>`;
+                    }
+                    $('#doctorRecommendations').html(docHtml);
+                    
+                    // Patient explanation
+                    let patientHtml = `<p><strong>${data.patient_explanation.what_it_means}</strong></p>
+                                      <p>${data.patient_explanation.condition_explained}</p>
+                                      <p><strong>Lifestyle Advice:</strong></p>`;
+                    data.patient_explanation.lifestyle_advice.forEach(advice => {
+                        patientHtml += `<div class="recommendation-item">💡 ${advice}</div>`;
+                    });
+                    $('#patientExplanation').html(patientHtml);
+                    
+                    // WHO References
+                    $('#whoReferences').html(`<pre style="white-space: pre-wrap;">${data.who_references}</pre>`);
+                },
+                error: function() {
+                    $('#loading').hide();
+                    alert('Error analyzing ECG. Please try again.');
+                }
+            });
+        }
+        
+        function generateReport(format) {
+            $('#loading').show();
+            $.ajax({
+                url: '/generate_report',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({format: format}),
+                success: function(data) {
+                    $('#loading').hide();
+                    if (data.success) {
+                        window.location.href = `/download/${data.filename}`;
+                        alert(`✅ Report generated: ${data.filename}`);
+                    } else {
+                        alert('Error generating report');
+                    }
+                },
+                error: function() {
+                    $('#loading').hide();
+                    alert('Error generating report');
+                }
+            });
+        }
+        
+        // Auto-analyze on load
+        $(document).ready(function() {
+            analyzeECG();
+        });
+    </script>
+</body>
+</html>
