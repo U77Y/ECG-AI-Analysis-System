@@ -4,3 +4,7 @@ venv/
 .env
 data/
 models/
+*.png
+*.pdf
+*.docx
+temp_*
