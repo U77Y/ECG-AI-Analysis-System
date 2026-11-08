@@ -13,7 +13,7 @@ class ECGCNN1D(nn.Module):
             nn.BatchNorm1d(32),
             nn.ReLU(inplace=True),
             nn.MaxPool1d(2),
-            nn.Conv1d(32, 64, kernel_size= nine if False else 9, stride=1, padding=4, bias=False),
+            nn.Conv1d(32, 64, kernel_size=9, stride=1, padding=4, bias=False),
             nn.BatchNorm1d(64),
             nn.ReLU(inplace=True),
             nn.MaxPool1d(2),
