@@ -119,7 +119,7 @@ def main() -> None:
         history.append(row)
         print(json.dumps(row, allow_nan=True))
         score = val_auc if np.isfinite(val_auc) else -float("inf")
-        if score > best_val_auc:
+        if score > best_val_auc or not (output_dir / "best_model.pt").exists():
             best_val_auc = score
             torch.save(
                 {
