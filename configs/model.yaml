@@ -1,0 +1,16 @@
+experiment:
+  name: ptbxl_cnn
+  seed: 42
+  output_dir: experiments/ptbxl_cnn
+
+training:
+  epochs: 20
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_workers: 0
+
+model:
+  input_channels: 12
+  num_classes: 5
+  dropout: 0.25
